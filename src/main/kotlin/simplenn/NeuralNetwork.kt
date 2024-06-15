@@ -1,5 +1,6 @@
 package learning.toni.simplenn
 
+import java.io.File
 import java.util.Random;
 
 
@@ -70,6 +71,7 @@ class NeuralNetwork(
 
     fun train(data: List<Pair<DoubleArray, Double>>, epochs: Int) {
         for (epoch in 0 until epochs) {
+            println("Epoch $epoch")
             for ((input, expected) in data) {
                 forward(input)
                 backpropagate(expected)
@@ -79,6 +81,34 @@ class NeuralNetwork(
 
     fun predict(input: DoubleArray): Double {
         return forward(input)
+    }
+
+
+    fun getWeights(): Pair<Array<DoubleArray>, Array<DoubleArray>> {
+        return Pair(weightsInputToHidden, weightsHiddenToOutput)
+    }
+
+
+    fun saveJsonModel(path: String) {
+        val weights = getWeights()
+        val weightsInputToHidden = weights.first
+        val weightsHiddenToOutput = weights.second
+
+        val weightsInputToHiddenString = weightsInputToHidden.joinToString("\n") { it.joinToString(",") }
+        val weightsHiddenToOutputString = weightsHiddenToOutput.joinToString("\n") { it.joinToString(",") }
+
+        File(path).writeText(
+            """
+            {
+                "weightsInputToHidden": [
+                    $weightsInputToHiddenString
+                ],
+                "weightsHiddenToOutput": [
+                    $weightsHiddenToOutputString
+                ]
+            }
+            """.trimIndent()
+        )
     }
 
 
