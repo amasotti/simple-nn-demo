@@ -1,9 +1,9 @@
 package learning.toni.simplenn
 
-fun sigmoid (x: Double): Double {
-    return 1 / (1 + Math.exp(-x))
-}
+import kotlin.math.exp
 
-fun sigmoidDerivative (x: Double): Double {
-    return x * (1 - x)
-}
+// Extension function for the sigmoid activation function
+fun Double.sigmoid() = 1.0 / (1.0 + exp(-this))
+
+// Extension function for the derivative of the sigmoid function
+fun Double.sigmoidDerivative() = this * (1.0 - this)
