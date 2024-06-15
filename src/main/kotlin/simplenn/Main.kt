@@ -13,6 +13,11 @@ fun main() {
 
     neuralNetwork.train(trainingData, epochs = 10000)
 
+    neuralNetwork.saveJsonModel("model.json")
+
+    val trainedModel = NeuralNetwork.loadJsonModel("model.json")
+
+
     // Testing the network
     val testData = listOf(
         doubleArrayOf(0.0, 0.0),
@@ -22,9 +27,9 @@ fun main() {
     )
 
     testData.forEach { input ->
-        val prediction = neuralNetwork.predict(input)
+        val prediction = trainedModel.predict(input)
         println("Input: ${input.joinToString(", ")} -> Prediction: $prediction")
     }
 
-    neuralNetwork.saveJsonModel("model.json")
+
 }

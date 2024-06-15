@@ -1,17 +1,20 @@
 package learning.toni.simplenn
 
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import simplenn.Weights
 import java.io.File
-import java.util.Random;
+import java.util.Random
 
-
+// Neural Network class
 class NeuralNetwork(
     private val inputLayerSize: Int,
     private val hiddenLayerSize: Int,
     private val outputLayerSize: Int,
     private val learningRate: Double
 ) {
-    private val weightsInputToHidden = Array(inputLayerSize) { DoubleArray(hiddenLayerSize) { 0.0 } }
-    private val weightsHiddenToOutput = Array(hiddenLayerSize) { DoubleArray(outputLayerSize) { 0.0 } }
+    private val weightsInputToHidden = Array(inputLayerSize) { DoubleArray(hiddenLayerSize) }
+    private val weightsHiddenToOutput = Array(hiddenLayerSize) { DoubleArray(outputLayerSize) }
 
     private var inputs = DoubleArray(inputLayerSize)
     private var hiddenLayer = DoubleArray(hiddenLayerSize)
@@ -21,46 +24,27 @@ class NeuralNetwork(
         initializeWeights()
     }
 
-
-
-    /**
-     * Initializes the weights of the Neural Network.
-     *
-     * The method calculates the standard deviations for the input-to-hidden and hidden-to-output weights.
-     * It then uses a random number generator to assign random weights to the weights matrices.
-     *
-     * @param None
-     * @return None
-     */
     private fun initializeWeights() {
-        // Calc standard deviation for input-to-hidden and hidden-to-output weights
-        // This is important because it helps to prevent the weights from being too large or too small
         val inputHiddenStd = Math.sqrt(2.0 / (inputLayerSize + hiddenLayerSize))
         val hiddenOutputStd = Math.sqrt(2.0 / (hiddenLayerSize + outputLayerSize))
-
         val random = Random()
 
-        // Assign random weights to the weights matrices for the Input to Hidden Layers
-        weightsInputToHidden.forEachIndexed { i, weights ->
-            weights.forEachIndexed { j, _ ->
+        weightsInputToHidden.forEach { weights ->
+            weights.indices.forEach { j ->
                 weights[j] = random.nextGaussian() * inputHiddenStd
             }
         }
 
-        // Assign random weights to the weights matrices for the Hidden to Output Layers
-        weightsHiddenToOutput.forEachIndexed { i, weights ->
-            weights.forEachIndexed { j, _ ->
+        weightsHiddenToOutput.forEach { weights ->
+            weights.indices.forEach { j ->
                 weights[j] = random.nextGaussian() * hiddenOutputStd
             }
         }
     }
 
-
     fun forward(input: DoubleArray): Double {
-        // Update the inputs
         inputs = input
 
-        // Calculate the hidden layer
         hiddenLayer = DoubleArray(hiddenLayerSize) { i ->
             inputs
                 .mapIndexed { j, input -> input * weightsInputToHidden[j][i] }
@@ -68,7 +52,6 @@ class NeuralNetwork(
                 .sigmoid()
         }
 
-        // Use the hidden layer to calculate the output, activating it with the sigmoid function
         output = hiddenLayer
             .mapIndexed { i, hidden -> hidden * weightsHiddenToOutput[i][0] }
             .sum()
@@ -85,13 +68,13 @@ class NeuralNetwork(
         val hiddenDeltas = hiddenErrors.mapIndexed { i, error -> error * hiddenLayer[i].sigmoidDerivative() }
 
         weightsHiddenToOutput.forEachIndexed { i, weights ->
-            weights.forEachIndexed { j, _ ->
+            weights.indices.forEach { j ->
                 weights[j] += learningRate * outputDelta * hiddenLayer[i]
             }
         }
 
         weightsInputToHidden.forEachIndexed { i, weights ->
-            weights.forEachIndexed { j, _ ->
+            weights.indices.forEach { j ->
                 weights[j] += learningRate * hiddenDeltas[j] * inputs[i]
             }
         }
@@ -107,34 +90,39 @@ class NeuralNetwork(
         }
     }
 
-    fun predict(input: DoubleArray): Double {
-        return forward(input)
-    }
-
-
-    fun getWeights(): Pair<Array<DoubleArray>, Array<DoubleArray>> {
-        return Pair(weightsInputToHidden, weightsHiddenToOutput)
-    }
-
+    fun predict(input: DoubleArray): Double = forward(input)
 
     fun saveJsonModel(path: String) {
-        val weightsInputToHiddenString = weightsInputToHidden.joinToString("\n,") { it.joinToString(",") }
-        val weightsHiddenToOutputString = weightsHiddenToOutput.joinToString("\n,") { it.joinToString(",") }
-
-        File(path).writeText(
-            """
-            {
-                "weightsInputToHidden": [
-                    $weightsInputToHiddenString
-                ],
-                "weightsHiddenToOutput": [
-                    $weightsHiddenToOutputString
-                ]
-            }
-            """.trimIndent()
-        )
+        val weights = Weights(weightsInputToHidden, weightsHiddenToOutput)
+        val json = Json.encodeToString(weights)
+        File(path).writeText(json)
     }
 
+    fun loadWeights(weights: Weights) {
+        weights.inputToHidden.forEachIndexed { i, row ->
+            row.forEachIndexed { j, value ->
+                weightsInputToHidden[i][j] = value
+            }
+        }
+        weights.hiddenToOutput.forEachIndexed { i, row ->
+            row.forEachIndexed { j, value ->
+                weightsHiddenToOutput[i][j] = value
+            }
+        }
+    }
 
-
+    companion object {
+        fun loadJsonModel(path: String): NeuralNetwork {
+            val json = File(path).readText()
+            val weights = Json.decodeFromString<Weights>(json)
+            return NeuralNetwork(
+                weights.inputToHidden.size,
+                weights.inputToHidden[0].size,
+                weights.hiddenToOutput[0].size,
+                0.1
+            ).apply {
+                loadWeights(weights)
+            }
+        }
+    }
 }
