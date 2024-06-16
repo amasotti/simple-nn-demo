@@ -10,4 +10,10 @@ data class Weights(
     override fun toString(): String {
         return "Weights(inputToHidden=${inputToHidden.contentDeepToString()}, hiddenToOutput=${hiddenToOutput.contentDeepToString()})"
     }
+
+    fun inputLayerSize() = inputToHidden.size
+    fun hiddenLayerSize() = hiddenToOutput.size
+    fun outputLayerSize() = hiddenToOutput[0].size
+
+
 }

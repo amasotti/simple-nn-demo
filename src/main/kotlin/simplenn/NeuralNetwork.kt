@@ -116,9 +116,9 @@ class NeuralNetwork(
             val json = File(path).readText()
             val weights = Json.decodeFromString<Weights>(json)
             return NeuralNetwork(
-                weights.inputToHidden.size,
-                weights.inputToHidden[0].size,
-                weights.hiddenToOutput[0].size,
+                weights.inputLayerSize(),
+                weights.hiddenLayerSize(),
+                weights.outputLayerSize(),
                 0.1
             ).apply {
                 loadWeights(weights)
